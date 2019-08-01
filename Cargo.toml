@@ -1,0 +1,41 @@
+[package]
+name = "k2k_advantage"
+version = "0.1.0"
+authors = [ "Tyberius Prime <tyberius_prime@coonabibba.de>"]
+edition = "2018"
+
+[dependencies]
+stm32f1xx-hal = { version = "0.3", features = ["rt", "stm32f103" ] }
+cortex-m = "0.5"
+cortex-m-rt = { version = "0.6.10", features = ["device"] }
+panic-halt = "*"
+stm32-usbd = { version = "0.3.0", features = ["stm32f103xx"] }
+usb-device = "0.2.0"
+cortex-m-rtfm = "0.4.1"
+cortex-m-semihosting = "0.3.2"
+either = {version = "1.5", default-features = false}
+nb = "0.1.2"
+no-std-compat = {version="0.1.0", features=["alloc", ]}
+embedded-hal = "0.2.3"
+alloc-cortex-m = "0.3.5"
+
+[dependencies.smallbitvec]
+version = "2.4.0"
+path = "../smallbitvec"
+default-features = false
+
+
+[dependencies.stm32f1]
+version = "0.7.0"
+features = ["stm32f103", "rt"]
+
+[profile.dev]
+opt-level = 1
+lto = true
+incremental = false
+
+[profile.release]
+lto = true
+incremental = false
+opt-level = "z"
+debug = true
