@@ -238,7 +238,7 @@ impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct KbHidReport([u8; 8]);
 
 impl KbHidReport {
@@ -262,5 +262,9 @@ impl KbHidReport {
         for c in &mut self.0[2..] {
             *c = kc as u8;
         }
+    }
+
+    pub fn clear(&mut self) {
+        self.set_all(KeyCode::No);
     }
 }

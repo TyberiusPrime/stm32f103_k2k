@@ -16,7 +16,7 @@ pub struct Matrix {
     sinks_pb: SinksB,
     sources_pa: Vec<PAx<Output<OpenDrain>>>,
     sources_pb: Vec<PBx<Output<OpenDrain>>>,
-    output: SmallBitVec,
+    pub output: SmallBitVec,
 }
 
 impl Matrix {
@@ -42,7 +42,7 @@ impl Matrix {
         return self.output.capacity();
     }
 
-    pub fn read_matrix(&mut self) -> &SmallBitVec {
+    pub fn read_matrix(&mut self) {
         self.output.clear();
         for source in self.sources_pa.iter_mut() {
             source.set_high().ok();
@@ -61,7 +61,6 @@ impl Matrix {
             Self::read_row(&mut self.output, &self.sinks_pa, &self.sinks_pb);
             source.set_high().ok();
         }
-        &self.output
     }
 
     fn read_row(output: &mut SmallBitVec, sinks_pa: &SinksA, sinks_pb: &SinksB) {
@@ -74,9 +73,9 @@ impl Matrix {
         }
     }
 
-    pub fn debug_serial(&self, tx: &mut impl StringSender) {
+    pub fn debug_serial(states: &SmallBitVec, tx: &mut impl StringSender) {
         let mut counter = 0;
-        for (ii, value) in self.output.iter().enumerate() {
+        for (ii, value) in states.iter().enumerate() {
             if value {
                 let o = format!("{}", ii);
                 tx.writeln(&o);
