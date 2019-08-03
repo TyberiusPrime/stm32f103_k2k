@@ -1,13 +1,16 @@
+use crate::KeyboardHidClass;
 use keytokey::{KeyCode, KeyboardState, USBKeyOut};
 
 pub struct USBOut {
     state: KeyboardState,
+    pub usb_class: KeyboardHidClass,
 }
 
 impl USBOut {
-    pub fn new() -> USBOut {
+    pub fn new(usb_class: KeyboardHidClass) -> USBOut {
         USBOut {
             state: KeyboardState::new(),
+            usb_class,
         }
     }
 }

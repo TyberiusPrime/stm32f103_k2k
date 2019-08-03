@@ -14,7 +14,7 @@ pub fn get_translation() -> Vec<u32> {
     ]
 }
 
-pub fn get_keytokey(output: USBOut) -> keytokey::Keyboard<'static, USBOut> {
+pub fn get_keytokey<'a>(output: USBOut) -> keytokey::Keyboard<'a, USBOut> {
     let mut k = keytokey::Keyboard::new(output);
     k.add_handler(Box::new(keytokey::debug_handlers::TranslationHelper {}));
     return k;

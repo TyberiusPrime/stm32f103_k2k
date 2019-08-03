@@ -1,6 +1,7 @@
 // Copyright 2019 Robin Krahl <robin.krahl@ireas.org>, Guillaume Pinot <texitoi@texitoi.eu>
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use keytokey::KeyCode;
 use usb_device::bus::{InterfaceNumber, StringIndex, UsbBus, UsbBusAllocator};
 use usb_device::class::{ControlIn, ControlOut, UsbClass};
 use usb_device::control;
@@ -8,7 +9,6 @@ use usb_device::control::{Recipient, RequestType};
 use usb_device::descriptor::DescriptorWriter;
 use usb_device::endpoint::{EndpointAddress, EndpointIn};
 use usb_device::UsbError;
-use keytokey::KeyCode;
 
 const SPECIFICATION_RELEASE: u16 = 0x111;
 const INTERFACE_CLASS_HID: u8 = 0x03;
@@ -238,7 +238,7 @@ impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
     }
 }
 
-[derive(Default)]
+#[derive(Default)]
 pub struct KbHidReport([u8; 8]);
 
 impl KbHidReport {

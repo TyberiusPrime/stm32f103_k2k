@@ -58,6 +58,7 @@ pub mod hid;
 pub mod keyboard;
 pub mod matrix;
 mod usbout;
+use usbout::USBOut;
 
 use crate::keyboard::Keyboard;
 use crate::matrix::Matrix;
@@ -92,6 +93,7 @@ use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::digital::v2_compat;
 use embedded_hal::serial::Write;
 
+use keytokey::Keyboard as K2KKeyboard;
 use stm32f1;
 use stm32f1xx_hal::stm32;
 use stm32f1xx_hal::{gpio, serial, timer};
@@ -124,14 +126,14 @@ impl StringSender for serial::Tx<stm32f1::stm32f103::USART1> {
 #[app(device = stm32f1xx_hal::stm32)]
 const APP: () = {
     static mut USB_DEV: UsbDevice<'static, UsbBusType> = ();
-    static mut USB_CLASS: KeyboardHidClass = ();
+    //static mut USB_CLASS: KeyboardHidClass = ();
     static mut TIMER: timer::Timer<stm32::TIM3> = ();
     static mut TX: serial::Tx<stm32f1::stm32f103::USART1> = ();
     static mut RX: serial::Rx<stm32f1::stm32f103::USART1> = ();
     static mut LED: Led = ();
     static mut MATRIX: Matrix = ();
     static mut DEBOUNCER: Debouncer = ();
-    static mut K2K: keytokey::Keyboard<'static, crate::usbout::USBOut> = ();
+    static mut K2K: K2KKeyboard<'static, USBOut> = ();
     static mut TRANSLATION: Vec<u32> = ();
     static mut LAST_TIME_MS: u32 = 0;
     static mut CURRENT_TIME_MS: u32 = 0;
@@ -297,29 +299,32 @@ const APP: () = {
         for ii in translation.len()..matrix.len() {
             translation.push(ii.try_into().unwrap());
         }
+        let output = USBOut::new(usb_class);
+        let mut k2k = crate::config::get_keytokey(output);
 
         init::LateResources {
             USB_DEV: usb_dev,
-            USB_CLASS: usb_class,
+            //USB_CLASS: usb_class,
             TIMER: timer,
             TX: tx,
             RX: rx,
             LED: led,
             MATRIX: matrix,
             DEBOUNCER: debouncer,
-            K2K: crate::config::get_keytokey(),
+            K2K: k2k,
             TRANSLATION: translation,
         }
     }
 
-    #[interrupt(priority = 3, resources = [USB_DEV, USB_CLASS])]
+    #[interrupt(priority = 3, resources = [USB_DEV, K2K])]
     fn USB_HP_CAN_TX() {
-        usb_poll(&mut resources.USB_DEV, &mut resources.USB_CLASS);
+        usb_poll(&mut resources.USB_DEV, &mut resources.K2K.output.usb_class);
     }
 
-    #[interrupt(priority = 3, resources = [USB_DEV, USB_CLASS])]
+    #[interrupt(priority = 3, resources = [USB_DEV, K2K])]
     fn USB_LP_CAN_RX0() {
-        usb_poll(&mut resources.USB_DEV, &mut resources.USB_CLASS);
+        resources.K2K.clear_unhandled();
+        usb_poll(&mut resources.USB_DEV, &mut resources.K2K.output.usb_class);
     }
 
     #[interrupt(priority = 2, resources = [CURRENT_TIME_MS])]
@@ -327,9 +332,16 @@ const APP: () = {
         *resources.CURRENT_TIME_MS += 1;
     }
 
-    #[interrupt(priority = 1, resources = [USB_CLASS, //MATRIX, 
-    TIMER, TX, LED, MATRIX, K2K, TRANSLATION,
-    CURRENT_TIME_MS, LAST_TIME_MS, DEBOUNCER
+    #[interrupt(priority = 1, resources = [
+        CURRENT_TIME_MS,
+        DEBOUNCER,
+        K2K,
+        LAST_TIME_MS,
+        LED,
+        MATRIX,
+        TRANSLATION,
+        TIMER,
+        TX,
     ])]
     fn TIM3() {
         resources.TIMER.clear_update_interrupt_flag();
@@ -343,36 +355,37 @@ const APP: () = {
             .overflowing_sub(*resources.LAST_TIME_MS)
             .0
             .clamp(0, 2u32.pow(16) - 1);
+        resources.K2K.clear_unhandled();
 
-        for (ii, pressed) in states.iter().enumerate() {
-            match resources.DEBOUNCER.update(ii, pressed) {
-                DebounceResult::NoChange => {}
-                DebounceResult::Pressed => {
-                    nothing_changed = false;
-                    resources
-                        .K2K
-                        .add_keypress(resources.TRANSLATION[ii], delta as u16);
-                    *resources.LAST_TIME_MS = current_time_ms;
+        /*
+                for (ii, pressed) in states.iter().enumerate() {
+                    match resources.DEBOUNCER.update(ii, pressed) {
+                        DebounceResult::NoChange => {}
+                        DebounceResult::Pressed => {
+                            nothing_changed = false;
+                            resources.K2K.add_keypress(resources.TRANSLATION[ii], delta as u16);
+                            *resources.LAST_TIME_MS = current_time_ms;
+                            resources.K2K.handle_keys().ok();
+                            resources.K2K.clear_unhandled();
+                        }
+                        DebounceResult::Released => {
+                            nothing_changed = false;
+                            resources
+                                .K2K
+                                .add_keyrelease(resources.TRANSLATION[ii], delta as u16);
+                            *resources.LAST_TIME_MS = current_time_ms;
+                            resources.K2K.handle_keys().ok();
+                            resources.K2K.clear_unhandled();
+                        }
+                    }
+                }
+                if nothing_changed {
+                    resources.K2K.add_timeout(delta as u16);
                     resources.K2K.handle_keys().ok();
                     resources.K2K.clear_unhandled();
                 }
-                DebounceResult::Released => {
-                    nothing_changed = false;
-                    resources
-                        .K2K
-                        .add_keyrelease(resources.TRANSLATION[ii], delta as u16);
-                    *resources.LAST_TIME_MS = current_time_ms;
-                    resources.K2K.handle_keys().ok();
-                    resources.K2K.clear_unhandled();
-                }
-            }
-        }
-        if nothing_changed {
-            resources.K2K.add_timeout(delta as u16);
-            resources.K2K.handle_keys().ok();
-            resources.K2K.clear_unhandled();
-        }
 
+        */
         resources.MATRIX.debug_serial(resources.TX);
 
         /*
