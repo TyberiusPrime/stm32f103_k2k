@@ -130,6 +130,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "debouncing"
+version = "0.1.0"
+dependencies = [
+ "no-std-compat 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "either"
 version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -186,8 +193,10 @@ dependencies = [
  "cortex-m-rt 0.6.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "cortex-m-rtfm 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "cortex-m-semihosting 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "debouncing 0.1.0",
  "either 1.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "embedded-hal 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "keytokey 0.1.0",
  "nb 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "no-std-compat 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "panic-halt 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -196,6 +205,16 @@ dependencies = [
  "stm32f1 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "stm32f1xx-hal 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "usb-device 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "keytokey"
+version = "0.1.0"
+dependencies = [
+ "heapless 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "no-std-compat 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num_enum 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "smallbitvec 2.4.0",
 ]
 
 [[package]]
@@ -212,6 +231,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "no-std-compat"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "num_enum"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "proc-macro2 0.4.30 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quote 0.6.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 0.15.42 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "owned-singleton"
@@ -422,6 +451,7 @@ dependencies = [
 "checksum linked_list_allocator 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)" = "47314ec1d29aa869ee7cb5a5be57be9b1055c56567d59c3fb6689926743e0bea"
 "checksum nb 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "b1411551beb3c11dedfb0a90a0fa256b47d28b9ec2cdff34c25a2fa59e45dbdc"
 "checksum no-std-compat 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "76be44514a04c35faca7555a755bb2abda4178ad5ac5464fc199fec4de0b930c"
+"checksum num_enum 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "3ec2f5fbf2cfc00ae097cdc4447db85de1973877ea1e1e631b92199bf0d39992"
 "checksum owned-singleton 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "21aa378869c97c7db706a4c576cf0ce8258dc7e0e1ad25a97ee5aba1fd4eed83"
 "checksum owned-singleton-macros 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8d5c2ac071b95017bf70a5b607037fb0ef4abfa663fdf6cac8fbf36af9756ee3"
 "checksum panic-halt 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "de96540e0ebde571dc55c73d60ef407c653844e6f9a1e2fdbd40c07b9252d812"

@@ -1,6 +1,7 @@
 #![no_main]
 #![no_std]
 #![feature(alloc_error_handler)]
+#![feature(clamp)]
 
 extern crate panic_halt;
 #[macro_use(block)]
@@ -10,6 +11,7 @@ extern crate nb;
 extern crate alloc;
 extern crate alloc_cortex_m;
 extern crate cortex_m_rt as rt; // v0.5.x
+extern crate keytokey;
 
 use core::alloc::Layout;
 
@@ -51,9 +53,11 @@ macro_rules! dbg {
 }
 */
 
+pub mod config;
 pub mod hid;
 pub mod keyboard;
 pub mod matrix;
+mod usbout;
 
 use crate::keyboard::Keyboard;
 use crate::matrix::Matrix;
@@ -72,6 +76,8 @@ pub use stm32f1xx_hal::gpio::GpioExt as _stm32_hal_gpio_GpioExt;
 //pub use stm32f1xx_hal::hal::digital::StatefulOutputPin as _embedded_hal_digital_StatefulOutputPin;
 //pub use stm32f1xx_hal::hal::digital::ToggleableOutputPin as _embedded_hal_digital_ToggleableOutputPin;
 //pub use stm32f1xx_hal::hal::prelude::*;
+use core::convert::TryInto;
+use debouncing::{DebounceResult, Debouncer};
 pub use stm32f1xx_hal::dma::CircReadDma as _stm32_hal_dma_CircReadDma;
 pub use stm32f1xx_hal::dma::ReadDma as _stm32_hal_dma_ReadDma;
 pub use stm32f1xx_hal::dma::WriteDma as _stm32_hal_dma_WriteDma;
@@ -124,6 +130,11 @@ const APP: () = {
     static mut RX: serial::Rx<stm32f1::stm32f103::USART1> = ();
     static mut LED: Led = ();
     static mut MATRIX: Matrix = ();
+    static mut DEBOUNCER: Debouncer = ();
+    static mut K2K: keytokey::Keyboard<'static, crate::usbout::USBOut> = ();
+    static mut TRANSLATION: Vec<u32> = ();
+    static mut LAST_TIME_MS: u32 = 0;
+    static mut CURRENT_TIME_MS: u32 = 0;
 
     #[init]
     fn init() -> init::LateResources {
@@ -171,8 +182,11 @@ const APP: () = {
             .serial_number(env!("CARGO_PKG_VERSION"))
             .build();
 
-        let mut timer = timer::Timer::tim3(device.TIM3, 3.hz(), clocks, &mut rcc.apb1); //todo, do this faster ;)
+        let mut timer = timer::Timer::tim3(device.TIM3, 1.hz(), clocks, &mut rcc.apb1); //todo, do this faster ;)
         timer.listen(timer::Event::Update);
+
+        let mut timer_ms = timer::Timer::tim4(device.TIM4, 1000.hz(), clocks, &mut rcc.apb1);
+        timer_ms.listen(timer::Event::Update);
 
         let pin_tx = gpioa.pa9.into_alternate_push_pull(&mut gpioa.crh);
         let pin_rx = gpioa.pa10;
@@ -186,37 +200,103 @@ const APP: () = {
             clocks,
             &mut rcc.apb2,
         );
-        let (mut tx, rx) = ser.split();
-        tx.writeln("Up");
+        let (tx, rx) = ser.split();
+
         let matrix = Matrix::new(
             vec![
-                gpioa.pa7.into_pull_up_input(&mut gpioa.crl).downgrade(),
-                gpioa.pa6.into_pull_up_input(&mut gpioa.crl).downgrade(),
-                gpioa.pa5.into_pull_up_input(&mut gpioa.crl).downgrade(),
-                gpioa.pa4.into_pull_up_input(&mut gpioa.crl).downgrade(),
-                gpioa.pa3.into_pull_up_input(&mut gpioa.crl).downgrade(),
-                gpioa.pa2.into_pull_up_input(&mut gpioa.crl).downgrade(),
+                gpioa.pa8.into_pull_up_input(&mut gpioa.crh).downgrade(),
+                gpioa.pa15.into_pull_up_input(&mut gpioa.crh).downgrade(),
             ],
             vec![
-                gpiob.pb11.into_pull_up_input(&mut gpiob.crh).downgrade(),
-                gpiob.pb10.into_pull_up_input(&mut gpiob.crh).downgrade(),
-                gpiob.pb1.into_pull_up_input(&mut gpiob.crl).downgrade(),
-                gpiob.pb0.into_pull_up_input(&mut gpiob.crl).downgrade(),
+                gpiob.pb12.into_pull_up_input(&mut gpiob.crh).downgrade(),
+                gpiob.pb13.into_pull_up_input(&mut gpiob.crh).downgrade(),
+                gpiob.pb14.into_pull_up_input(&mut gpiob.crh).downgrade(),
+                gpiob.pb15.into_pull_up_input(&mut gpiob.crh).downgrade(),
+                gpiob.pb6.into_pull_up_input(&mut gpiob.crl).downgrade(),
+                gpiob.pb4.into_pull_up_input(&mut gpiob.crl).downgrade(),
+                gpiob.pb5.into_pull_up_input(&mut gpiob.crl).downgrade(),
             ],
             vec![
-                gpioa.pa8.into_push_pull_output(&mut gpioa.crh).downgrade(),
-                gpioa.pa15.into_push_pull_output(&mut gpioa.crh).downgrade(),
+                gpioa
+                    .pa7
+                    .into_open_drain_output_with_state(
+                        &mut gpioa.crl,
+                        stm32f1xx_hal::gpio::State::High,
+                    )
+                    .downgrade(), //brown
+                gpioa
+                    .pa6
+                    .into_open_drain_output_with_state(
+                        &mut gpioa.crl,
+                        stm32f1xx_hal::gpio::State::High,
+                    )
+                    .downgrade(), //purple
+                gpioa
+                    .pa5
+                    .into_open_drain_output_with_state(
+                        &mut gpioa.crl,
+                        stm32f1xx_hal::gpio::State::High,
+                    )
+                    .downgrade(), //red
+                gpioa
+                    .pa4
+                    .into_open_drain_output_with_state(
+                        &mut gpioa.crl,
+                        stm32f1xx_hal::gpio::State::High,
+                    )
+                    .downgrade(), //white
+                gpioa
+                    .pa3
+                    .into_open_drain_output_with_state(
+                        &mut gpioa.crl,
+                        stm32f1xx_hal::gpio::State::High,
+                    )
+                    .downgrade(), //yellow
+                gpioa
+                    .pa2
+                    .into_open_drain_output_with_state(
+                        &mut gpioa.crl,
+                        stm32f1xx_hal::gpio::State::High,
+                    )
+                    .downgrade(), //blue
             ],
             vec![
-                gpiob.pb12.into_push_pull_output(&mut gpiob.crh).downgrade(),
-                gpiob.pb13.into_push_pull_output(&mut gpiob.crh).downgrade(),
-                gpiob.pb14.into_push_pull_output(&mut gpiob.crh).downgrade(),
-                gpiob.pb15.into_push_pull_output(&mut gpiob.crh).downgrade(),
-                gpiob.pb3.into_push_pull_output(&mut gpiob.crl).downgrade(),
-                gpiob.pb4.into_push_pull_output(&mut gpiob.crl).downgrade(),
-                gpiob.pb5.into_push_pull_output(&mut gpiob.crl).downgrade(),
+                gpiob
+                    .pb11
+                    .into_open_drain_output_with_state(
+                        &mut gpiob.crh,
+                        stm32f1xx_hal::gpio::State::High,
+                    )
+                    .downgrade(), // black
+                gpiob
+                    .pb10
+                    .into_open_drain_output_with_state(
+                        &mut gpiob.crh,
+                        stm32f1xx_hal::gpio::State::High,
+                    )
+                    .downgrade(), // red
+                gpiob
+                    .pb1
+                    .into_open_drain_output_with_state(
+                        &mut gpiob.crl,
+                        stm32f1xx_hal::gpio::State::High,
+                    )
+                    .downgrade(), // blue
+                gpiob
+                    .pb0
+                    .into_open_drain_output_with_state(
+                        &mut gpiob.crl,
+                        stm32f1xx_hal::gpio::State::High,
+                    )
+                    .downgrade(), // green
             ],
         );
+
+        let debouncer = Debouncer::new(matrix.len());
+        let mut translation = crate::config::get_translation();
+        for ii in translation.len()..matrix.len() {
+            translation.push(ii.try_into().unwrap());
+        }
 
         init::LateResources {
             USB_DEV: usb_dev,
@@ -226,52 +306,73 @@ const APP: () = {
             RX: rx,
             LED: led,
             MATRIX: matrix,
-            /*
-            MATRIX: matrix::Matrix::new(
-                matrix::Cols(
-                    gpiob.pb12.into_pull_up_input(&mut gpiob.crh),
-                    gpiob.pb13.into_pull_up_input(&mut gpiob.crh),
-                    gpiob.pb14.into_pull_up_input(&mut gpiob.crh),
-                    gpiob.pb15.into_pull_up_input(&mut gpiob.crh),
-                    gpioa.pa8.into_pull_up_input(&mut gpioa.crh),
-                    gpioa.pa9.into_pull_up_input(&mut gpioa.crh),
-                    gpioa.pa10.into_pull_up_input(&mut gpioa.crh),
-                    gpiob.pb5.into_pull_up_input(&mut gpiob.crl),
-                    gpiob.pb6.into_pull_up_input(&mut gpiob.crl),
-                    gpiob.pb7.into_pull_up_input(&mut gpiob.crl),
-                    gpiob.pb8.into_pull_up_input(&mut gpiob.crh),
-                    gpiob.pb9.into_pull_up_input(&mut gpiob.crh),
-                ),
-                matrix::Rows(
-                    gpiob.pb11.into_push_pull_output(&mut gpiob.crh),
-                    gpiob.pb10.into_push_pull_output(&mut gpiob.crh),
-                    gpiob.pb1.into_push_pull_output(&mut gpiob.crl),
-                    gpiob.pb0.into_push_pull_output(&mut gpiob.crl),
-                    gpioa.pa7.into_push_pull_output(&mut gpioa.crl),
-                ),
-            ),
-                */
+            DEBOUNCER: debouncer,
+            K2K: crate::config::get_keytokey(),
+            TRANSLATION: translation,
         }
     }
 
-    #[interrupt(priority = 2, resources = [USB_DEV, USB_CLASS])]
+    #[interrupt(priority = 3, resources = [USB_DEV, USB_CLASS])]
     fn USB_HP_CAN_TX() {
         usb_poll(&mut resources.USB_DEV, &mut resources.USB_CLASS);
     }
 
-    #[interrupt(priority = 2, resources = [USB_DEV, USB_CLASS])]
+    #[interrupt(priority = 3, resources = [USB_DEV, USB_CLASS])]
     fn USB_LP_CAN_RX0() {
         usb_poll(&mut resources.USB_DEV, &mut resources.USB_CLASS);
     }
 
+    #[interrupt(priority = 2, resources = [CURRENT_TIME_MS])]
+    fn TIM4() {
+        *resources.CURRENT_TIME_MS += 1;
+    }
+
     #[interrupt(priority = 1, resources = [USB_CLASS, //MATRIX, 
-    TIMER, TX, LED, MATRIX])]
+    TIMER, TX, LED, MATRIX, K2K, TRANSLATION,
+    CURRENT_TIME_MS, LAST_TIME_MS, DEBOUNCER
+    ])]
     fn TIM3() {
         resources.TIMER.clear_update_interrupt_flag();
         resources.TX.writeln("Hi!");
         #[allow(deprecated)]
         resources.LED.toggle();
-        resources.MATRIX.read_matrix();
+        let states = resources.MATRIX.read_matrix();
+        let mut nothing_changed = true;
+        let current_time_ms = resources.CURRENT_TIME_MS.lock(|ct| *ct);
+        let delta = current_time_ms
+            .overflowing_sub(*resources.LAST_TIME_MS)
+            .0
+            .clamp(0, 2u32.pow(16) - 1);
+
+        for (ii, pressed) in states.iter().enumerate() {
+            match resources.DEBOUNCER.update(ii, pressed) {
+                DebounceResult::NoChange => {}
+                DebounceResult::Pressed => {
+                    nothing_changed = false;
+                    resources
+                        .K2K
+                        .add_keypress(resources.TRANSLATION[ii], delta as u16);
+                    *resources.LAST_TIME_MS = current_time_ms;
+                    resources.K2K.handle_keys().ok();
+                    resources.K2K.clear_unhandled();
+                }
+                DebounceResult::Released => {
+                    nothing_changed = false;
+                    resources
+                        .K2K
+                        .add_keyrelease(resources.TRANSLATION[ii], delta as u16);
+                    *resources.LAST_TIME_MS = current_time_ms;
+                    resources.K2K.handle_keys().ok();
+                    resources.K2K.clear_unhandled();
+                }
+            }
+        }
+        if nothing_changed {
+            resources.K2K.add_timeout(delta as u16);
+            resources.K2K.handle_keys().ok();
+            resources.K2K.clear_unhandled();
+        }
+
         resources.MATRIX.debug_serial(resources.TX);
 
         /*

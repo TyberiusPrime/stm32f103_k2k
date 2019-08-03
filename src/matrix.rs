@@ -1,6 +1,7 @@
-use stm32f1xx_hal::gpio::{gpioa::*, gpiob::*, Input, Output, PullUp, PushPull};
+use stm32f1xx_hal::gpio::{gpioa::*, gpiob::*, Input, OpenDrain, Output, PullUp};
 //use stm32f1xx_hal::prelude::*;
 use crate::StringSender;
+use cortex_m;
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 #[allow(unused_imports)]
 use embedded_hal::digital::v2_compat;
@@ -13,8 +14,8 @@ type SinksB = Vec<PBx<Input<PullUp>>>;
 pub struct Matrix {
     sinks_pa: SinksA,
     sinks_pb: SinksB,
-    sources_pa: Vec<PAx<Output<PushPull>>>,
-    sources_pb: Vec<PBx<Output<PushPull>>>,
+    sources_pa: Vec<PAx<Output<OpenDrain>>>,
+    sources_pb: Vec<PBx<Output<OpenDrain>>>,
     output: SmallBitVec,
 }
 
@@ -22,8 +23,8 @@ impl Matrix {
     pub fn new(
         sinks_pa: SinksA,
         sinks_pb: SinksB,
-        sources_pa: Vec<PAx<Output<PushPull>>>,
-        sources_pb: Vec<PBx<Output<PushPull>>>,
+        sources_pa: Vec<PAx<Output<OpenDrain>>>,
+        sources_pb: Vec<PBx<Output<OpenDrain>>>,
     ) -> Matrix {
         let sink_count = sinks_pa.len() + sinks_pb.len();
         let source_count = sources_pa.len() + sources_pb.len();
@@ -35,6 +36,10 @@ impl Matrix {
             sources_pb,
             output,
         }
+    }
+
+    pub fn len(&self) -> usize {
+        return self.output.capacity();
     }
 
     pub fn read_matrix(&mut self) -> &SmallBitVec {
@@ -60,6 +65,7 @@ impl Matrix {
     }
 
     fn read_row(output: &mut SmallBitVec, sinks_pa: &SinksA, sinks_pb: &SinksB) {
+        cortex_m::asm::delay(4800);
         for sink in sinks_pa.iter() {
             output.push(sink.is_low().unwrap_or(false));
         }
@@ -69,9 +75,14 @@ impl Matrix {
     }
 
     pub fn debug_serial(&self, tx: &mut impl StringSender) {
+        let mut counter = 0;
         for (ii, value) in self.output.iter().enumerate() {
-            let o = format!("{}: {}", ii, value);
-            tx.writeln(&o);
+            if value {
+                let o = format!("{}", ii);
+                tx.writeln(&o);
+                counter += 1;
+            }
         }
+        tx.writeln(&format!("Count: {}\r\n", counter));
     }
 }

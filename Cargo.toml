@@ -11,7 +11,7 @@ cortex-m-rt = { version = "0.6.10", features = ["device"] }
 panic-halt = "*"
 stm32-usbd = { version = "0.3.0", features = ["stm32f103xx"] }
 usb-device = "0.2.0"
-cortex-m-rtfm = "0.4.1"
+cortex-m-rtfm = "0.4.1" #todo: upgrade to 0.4.3
 cortex-m-semihosting = "0.3.2"
 either = {version = "1.5", default-features = false}
 nb = "0.1.2"
@@ -23,6 +23,12 @@ alloc-cortex-m = "0.3.5"
 version = "2.4.0"
 path = "../smallbitvec"
 default-features = false
+
+[dependencies.debouncing]
+path = "../debouncing"
+
+[dependencies.keytokey]
+path = "../keytokey"
 
 
 [dependencies.stm32f1]

@@ -8,6 +8,7 @@ use usb_device::control::{Recipient, RequestType};
 use usb_device::descriptor::DescriptorWriter;
 use usb_device::endpoint::{EndpointAddress, EndpointIn};
 use usb_device::UsbError;
+use keytokey::KeyCode;
 
 const SPECIFICATION_RELEASE: u16 = 0x111;
 const INTERFACE_CLASS_HID: u8 = 0x03;
@@ -233,6 +234,33 @@ impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
                     _ => (),
                 }
             }
+        }
+    }
+}
+
+[derive(Default)]
+pub struct KbHidReport([u8; 8]);
+
+impl KbHidReport {
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.0
+    }
+    pub fn pressed(&mut self, kc: KeyCode) {
+        use KeyCode::*;
+        match kc {
+            No => (),
+            ErrorRollOver | PostFail | ErrorUndefined => self.set_all(kc),
+            kc if kc.is_modifier() => self.0[0] |= kc.as_modifier_bit(),
+            _ => self.0[2..]
+                .iter_mut()
+                .find(|c| **c == 0)
+                .map(|c| *c = kc as u8)
+                .unwrap_or_else(|| self.set_all(ErrorRollOver)),
+        }
+    }
+    fn set_all(&mut self, kc: KeyCode) {
+        for c in &mut self.0[2..] {
+            *c = kc as u8;
         }
     }
 }
