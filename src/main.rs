@@ -184,7 +184,7 @@ const APP: () = {
             .serial_number(env!("CARGO_PKG_VERSION"))
             .build();
 
-        let mut timer = timer::Timer::tim3(device.TIM3, 1.hz(), clocks, &mut rcc.apb1); //todo, do this faster ;)
+        let mut timer = timer::Timer::tim3(device.TIM3, 100.hz(), clocks, &mut rcc.apb1); //todo, do this faster ;)
         timer.listen(timer::Event::Update);
 
         let mut timer_ms = timer::Timer::tim4(device.TIM4, 1000.hz(), clocks, &mut rcc.apb1);
@@ -319,12 +319,21 @@ const APP: () = {
     #[interrupt(priority = 3, resources = [USB_DEV, K2K])]
     fn USB_HP_CAN_TX() {
         usb_poll(&mut resources.USB_DEV, &mut resources.K2K.output.usb_class);
+        
     }
 
     #[interrupt(priority = 3, resources = [USB_DEV, K2K])]
     fn USB_LP_CAN_RX0() {
-        resources.K2K.clear_unhandled();
         usb_poll(&mut resources.USB_DEV, &mut resources.K2K.output.usb_class);
+        if let Some(report) = resources.K2K.output.buffer.pop_front() {
+            match resources.K2K.output.usb_class.write(report.as_bytes()) {
+            Ok(0) => { //try again?
+                resources.K2K.output.buffer.push_back(report);
+            }
+            Ok(_i) => {}, //complete report, presumably
+            Err(_) => {},
+        };
+        }
     }
 
     #[interrupt(priority = 2, resources = [CURRENT_TIME_MS, TIMER_MS])]

@@ -2,7 +2,8 @@ use no_std_compat::prelude::v1::*;
 
 use crate::usbout::USBOut;
 use crate::StringSender;
-use keytokey::{Keyboard, ProcessKeys, Event, EventStatus, USBKeyOut, debug_handlers, iter_unhandled_mut, KeyCode};
+use keytokey::{Keyboard, ProcessKeys, Event, EventStatus, USBKeyOut, debug_handlers, iter_unhandled_mut, KeyCode,
+UnicodeSendMode};
 // pins for matrix - see main.rs, otherwise the borrow checker has a fit :(
 
 pub fn get_translation() -> Vec<u32> {
@@ -21,6 +22,11 @@ impl ProcessKeys<USBOut> for AAA {
             *status = EventStatus::Handled;
             match e {
                 Event::KeyRelease(kc) => {
+                    if kc.keycode == 32 {
+                        output.state().unicode_mode = UnicodeSendMode::WinCompose;
+                        output.send_string("Hello0123");
+                    }
+                    else {
                     output.tx.writeln("Key release!");
                     output.register_key(KeyCode::A);
                     output.tx.writeln("Reg A");
@@ -28,13 +34,14 @@ impl ProcessKeys<USBOut> for AAA {
                     output.tx.writeln("Send B");
                     output.register_key(KeyCode::B);
                     output.send_registered();
-output.tx.writeln("Send C");
+                    output.tx.writeln("Send C");
                     output.register_key(KeyCode::C);
                     output.send_registered();
                     
                     output.tx.writeln("Send empty");
                     output.send_empty();
                     output.tx.writeln("Done sending");
+                    }
                 }
                 _ => {
                     *status = EventStatus::Handled;
