@@ -18,6 +18,8 @@ pub struct USBOut {
     pub buffer: VecDeque<KbHidReport>,
 }
 
+unsafe impl Sync for USBOut {}
+
 impl USBOut {
     pub fn new(usb_class: KeyboardHidClass, tx: serial::Tx<stm32f1::stm32f103::USART1>) -> USBOut {
         USBOut {
@@ -30,10 +32,11 @@ impl USBOut {
     }
 
     fn send_report(&mut self, report: KbHidReport) {
-        /*if report.as_bytes() != [0u8; 8] {
+      /*  if report.as_bytes() != [0u8; 8] {
             self.tx.writeln(&format!("{:?}", report.as_bytes()));
         }
         */
+        
         match self.usb_class.write(report.as_bytes()) {
             Ok(0) => {
                 self.buffer.push_back(report);

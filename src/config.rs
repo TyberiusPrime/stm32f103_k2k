@@ -6,6 +6,7 @@ use keytokey::{
     handlers, debug_handlers, iter_unhandled_mut, 
     Event, EventStatus, KeyCode, Keyboard, ProcessKeys,
     USBKeyOut, UnicodeSendMode,
+    AcceptsKeycode
 };
 // pins for matrix - see main.rs, otherwise the borrow checker has a fit :(
 
@@ -71,7 +72,7 @@ pub fn get_translation() -> Vec<u32> {
         //0000001d
         KeyCode::Slash.into(),
         //0000001e
-        KeyCode::Delete.into(),
+        KeyCode::BSlash.into(),
         //0000001f
         KeyCode::Comma.into(),
         //0x20
@@ -138,7 +139,6 @@ pub fn get_translation() -> Vec<u32> {
         KeyCode::F6.into(),
         //3f
         0, ///palm 2
-        .into()
         //00000040
         KeyCode::Kb4.into(),
         //00000041
@@ -204,30 +204,36 @@ pub fn get_translation() -> Vec<u32> {
     // So you can start with an empty one, + key2key::debug_handlers::TranslationHelper
     // in the layout
 }
-pub struct AAA {}
-impl ProcessKeys<USBOut> for AAA {
-    fn process_keys(&mut self, events: &mut Vec<(Event, EventStatus)>, output: &mut USBOut) -> () {
-        for (e, status) in iter_unhandled_mut(events) {
-            // *status = EventStatus::Handled;
-            match e {
-                Event::KeyRelease(kc) => {
-                    if kc.keycode == 32 {
-                        output.state().unicode_mode = UnicodeSendMode::Linux;
-                        output.send_string("Hello0123");
-                        *status = EventStatus::Handled;
-                    }
-                }
-                _ => {
-                    *status = EventStatus::Handled;
-                }
-            };
-        }
+pub struct Debugger {
+    s: String
+}
+impl Debugger {
+    #[allow(dead_code)]
+    fn new(s: String)->Debugger{
+        Debugger{s}
+    }
+}
+
+impl ProcessKeys<USBOut> for Debugger {
+    fn process_keys(&mut self, events: &mut Vec<(Event, EventStatus)>, _output: &mut USBOut) -> () {
+        output.tx.writeln(&format!("{}, {:?}", self.s, events));
     }
 }
 
 pub fn get_keytokey<'a>(output: USBOut) -> Keyboard<'a, USBOut> {
     let mut k = Keyboard::new(output);
- //   k.add_handler(Box::new(AAA {}));
+    //k.add_handler(Box::new(Debugger::new("A".to_string())));
+    let dvorak_id = k.add_handler(Box::new(handlers::dvorak()));
+    let p = handlers::PressReleaseMacro::new(
+            KeyCode::F1.to_u32(),
+            |output: &mut USBOut| { },
+            move |output: &mut USBOut| { 
+                output.state().toggle_handler(dvorak_id);}
+ )
+    ;
+    k.add_handler(Box::new(p));
+    k.output.state().enable_handler(dvorak_id);
+    //k.add_handler(Box::new(Debugger::new("B".to_string())));
     k.add_handler(Box::new(handlers::USBKeyboard::new()));
     k.add_handler(Box::new(debug_handlers::TranslationHelper {}));
     return k;
