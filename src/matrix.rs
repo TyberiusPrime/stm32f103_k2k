@@ -74,14 +74,14 @@ impl Matrix {
     }
 
     pub fn debug_serial(states: &SmallBitVec, tx: &mut impl StringSender) {
-        let mut counter = 0;
+        //let mut counter = 0;
         for (ii, value) in states.iter().enumerate() {
             if value {
                 let o = format!("{}", ii);
                 tx.writeln(&o);
-                counter += 1;
+                //       counter += 1;
             }
         }
-        tx.writeln(&format!("Count: {}\r\n", counter));
+        //tx.writeln(&format!("Count: {}\r\n", counter));
     }
 }

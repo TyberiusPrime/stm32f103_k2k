@@ -1,24 +1,25 @@
-    use no_std_compat::prelude::v1::*;
-    use no_std_compat::collections::VecDeque;
-    use crate::KeyboardHidClass;
-    use keytokey::{KeyCode, KeyboardState, USBKeyOut};
-    use crate::hid::KbHidReport;
-    use core::clone::Clone;
 
-    use stm32f1;
-    use stm32f1xx_hal::{serial};
+use crate::hid::KbHidReport;
+use crate::KeyboardHidClass;
+use core::clone::Clone;
+use keytokey::{KeyCode, KeyboardState, USBKeyOut};
+use no_std_compat::collections::VecDeque;
+use no_std_compat::prelude::v1::*;
+use crate::StringSender;
 
-    pub struct USBOut {
-        state: KeyboardState,
-        pub usb_class: KeyboardHidClass,
-        current_report: KbHidReport,
-        pub tx: serial::Tx<stm32f1::stm32f103::USART1>,
-        pub buffer: VecDeque<KbHidReport>,
+use stm32f1;
+use stm32f1xx_hal::serial;
+
+pub struct USBOut {
+    state: KeyboardState,
+    pub usb_class: KeyboardHidClass,
+    current_report: KbHidReport,
+    pub tx: serial::Tx<stm32f1::stm32f103::USART1>,
+    pub buffer: VecDeque<KbHidReport>,
 }
 
 impl USBOut {
-    pub fn new(usb_class: KeyboardHidClass, 
-    tx: serial::Tx<stm32f1::stm32f103::USART1>) -> USBOut {
+    pub fn new(usb_class: KeyboardHidClass, tx: serial::Tx<stm32f1::stm32f103::USART1>) -> USBOut {
         USBOut {
             state: KeyboardState::new(),
             usb_class,
@@ -29,12 +30,16 @@ impl USBOut {
     }
 
     fn send_report(&mut self, report: KbHidReport) {
+        /*if report.as_bytes() != [0u8; 8] {
+            self.tx.writeln(&format!("{:?}", report.as_bytes()));
+        }
+        */
         match self.usb_class.write(report.as_bytes()) {
             Ok(0) => {
                 self.buffer.push_back(report);
             }
-            Ok(_i) => {}, //we wrote the complete report, presumably.
-            Err(_) => {},
+            Ok(_i) => {} //we wrote the complete report, presumably.
+            Err(_) => {}
         };
     }
 }
@@ -51,7 +56,6 @@ impl USBKeyOut for USBOut {
     /// register these USB keycodes to be send on .send_registered
     fn register_key(&mut self, key: KeyCode) {
         self.current_report.pressed(key);
-
     }
     /// send registered keycodes (or an empty nothing-pressed status)
     fn send_registered(&mut self) {

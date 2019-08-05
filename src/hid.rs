@@ -265,6 +265,8 @@ impl KbHidReport {
     }
 
     pub fn clear(&mut self) {
-        self.set_all(KeyCode::No);
+        for c in &mut self.0 {
+            *c = 0;
+        }
     }
 }
