@@ -5,7 +5,6 @@ use core::clone::Clone;
 use keytokey::{KeyCode, KeyboardState, USBKeyOut};
 use no_std_compat::collections::VecDeque;
 use no_std_compat::prelude::v1::*;
-use crate::StringSender;
 
 use stm32f1;
 use stm32f1xx_hal::serial;

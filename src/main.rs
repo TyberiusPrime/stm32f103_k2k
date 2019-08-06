@@ -12,6 +12,7 @@ extern crate alloc;
 extern crate alloc_cortex_m;
 extern crate cortex_m_rt as rt; // v0.5.x
 extern crate keytokey;
+extern crate kinesis;
 
 use core::alloc::Layout;
 
@@ -28,7 +29,6 @@ use alloc_cortex_m::CortexMHeap;
 static ALLOCATOR: CortexMHeap = CortexMHeap::empty();
 
 
-pub mod config;
 pub mod hid;
 pub mod keyboard;
 pub mod matrix;
@@ -270,12 +270,12 @@ const APP: () = {
         );
 
         let debouncer = Debouncer::new(matrix.len());
-        let mut translation = crate::config::get_translation();
+        let mut translation = kinesis::get_translation();
         for ii in translation.len()..matrix.len() {
             translation.push(ii.try_into().unwrap());
         }
         let output = USBOut::new(usb_class, tx);
-        let k2k = crate::config::get_keytokey(output);
+        let k2k = kinesis::get_keytokey(output);
 
         init::LateResources {
             USB_DEV: usb_dev,

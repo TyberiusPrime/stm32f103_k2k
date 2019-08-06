@@ -197,6 +197,7 @@ dependencies = [
  "either 1.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "embedded-hal 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "keytokey 0.1.0",
+ "kinesis 0.1.0",
  "nb 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "no-std-compat 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "panic-halt 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -215,6 +216,15 @@ dependencies = [
  "no-std-compat 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_enum 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "smallbitvec 2.4.0",
+ "spin 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "kinesis"
+version = "0.1.0"
+dependencies = [
+ "keytokey 0.1.0",
+ "no-std-compat 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -336,6 +346,11 @@ version = "2.4.0"
 dependencies = [
  "no-std-compat 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "spin"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "stable_deref_trait"
@@ -464,6 +479,7 @@ dependencies = [
 "checksum rustc_version 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
 "checksum semver 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1d7eb9ef2c18661902cc47e535f9bc51b78acd254da71d375c2f6720d9a40403"
 "checksum semver-parser 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
+"checksum spin 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "44363f6f51401c34e7be73db0db371c04705d35efbe9f7d6082e03a921a32c55"
 "checksum stable_deref_trait 1.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "dba1a27d3efae4351c8051072d619e3ade2820635c3958d826bfea39d59b54c8"
 "checksum stm32-usbd 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "73a6607e4a0e3106cb13853a620207d875ead444075befa7721e2c3473592012"
 "checksum stm32f1 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "afd24d6620b9427cd9e687e0d1d535c7cf84466f4d59ba766095c8b9d3b28c03"
