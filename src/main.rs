@@ -28,7 +28,6 @@ use alloc_cortex_m::CortexMHeap;
 #[global_allocator]
 static ALLOCATOR: CortexMHeap = CortexMHeap::empty();
 
-
 pub mod hid;
 pub mod keyboard;
 pub mod matrix;
@@ -294,7 +293,6 @@ const APP: () = {
     #[interrupt(priority = 3, resources = [USB_DEV, K2K])]
     fn USB_HP_CAN_TX() {
         usb_poll(&mut resources.USB_DEV, &mut resources.K2K.output.usb_class);
-        
     }
 
     #[interrupt(priority = 3, resources = [USB_DEV, K2K])]
@@ -302,12 +300,13 @@ const APP: () = {
         usb_poll(&mut resources.USB_DEV, &mut resources.K2K.output.usb_class);
         if let Some(report) = resources.K2K.output.buffer.pop_front() {
             match resources.K2K.output.usb_class.write(report.as_bytes()) {
-            Ok(0) => { //try again?
-                resources.K2K.output.buffer.push_back(report);
-            }
-            Ok(_i) => {}, //complete report, presumably
-            Err(_) => {},
-        };
+                Ok(0) => {
+                    //try again?
+                    resources.K2K.output.buffer.push_back(report);
+                }
+                Ok(_i) => {} //complete report, presumably
+                Err(_) => {}
+            };
         }
     }
 
@@ -341,7 +340,7 @@ const APP: () = {
             .0
             .clamp(0, 2u32.pow(16) - 1);
         let debouncer = &mut *resources.DEBOUNCER;
-        let translation =& *resources.TRANSLATION;
+        let translation = &*resources.TRANSLATION;
         let mut update_last_time = false;
         resources.K2K.lock(|k2k| {
             matrix::Matrix::debug_serial(&states, &mut k2k.output.tx);
@@ -366,16 +365,14 @@ const APP: () = {
                 }
             }
             if nothing_changed {
-                //k2k.add_timeout(delta as u16);
-                //k2k.handle_keys().ok();
-                //k2k.clear_unhandled();
+                k2k.add_timeout(delta as u16);
+                k2k.handle_keys().ok();
+                k2k.clear_unhandled();
             }
         });
         if update_last_time {
             *resources.LAST_TIME_MS = current_time_ms;
         }
-
-
     }
 };
 

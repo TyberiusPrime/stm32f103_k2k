@@ -1,4 +1,3 @@
-
 use crate::hid::KbHidReport;
 use crate::KeyboardHidClass;
 use core::clone::Clone;
@@ -31,11 +30,11 @@ impl USBOut {
     }
 
     fn send_report(&mut self, report: KbHidReport) {
-      /*  if report.as_bytes() != [0u8; 8] {
+        /*  if report.as_bytes() != [0u8; 8] {
             self.tx.writeln(&format!("{:?}", report.as_bytes()));
         }
         */
-        
+
         match self.usb_class.write(report.as_bytes()) {
             Ok(0) => {
                 self.buffer.push_back(report);
@@ -74,5 +73,10 @@ impl USBKeyOut for USBOut {
     /// retrieve a mutable KeyboardState
     fn state(&mut self) -> &mut KeyboardState {
         return &mut self.state;
+    }
+
+    /// retrieve a KeyboardState
+    fn ro_state(&self) -> &KeyboardState {
+        return &self.state;
     }
 }
