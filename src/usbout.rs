@@ -12,6 +12,7 @@ pub struct USBOut {
     state: KeyboardState,
     pub usb_class: KeyboardHidClass,
     current_report: KbHidReport,
+    last_report: KbHidReport,
     pub tx: serial::Tx<stm32f1::stm32f103::USART1>,
     pub buffer: VecDeque<KbHidReport>,
 }
@@ -24,24 +25,31 @@ impl USBOut {
             state: KeyboardState::new(),
             usb_class,
             current_report: KbHidReport::default(),
+            last_report: KbHidReport::default(),
             tx,
             buffer: VecDeque::new(),
         }
     }
 
     fn send_report(&mut self, report: KbHidReport) {
-        /*  if report.as_bytes() != [0u8; 8] {
-            self.tx.writeln(&format!("{:?}", report.as_bytes()));
-        }
-        */
-
-        match self.usb_class.write(report.as_bytes()) {
-            Ok(0) => {
-                self.buffer.push_back(report);
+        /*
+         */
+        if report != self.last_report {
+            /*
+            use crate::StringSender;
+            if report.as_bytes() != [0u8; 8] {
+                self.tx.writeln(&format!("{:?}", report.as_bytes()));
             }
-            Ok(_i) => {} //we wrote the complete report, presumably.
-            Err(_) => {}
-        };
+            */
+            self.last_report = report;
+            match self.usb_class.write(report.as_bytes()) {
+                Ok(0) => {
+                    self.buffer.push_back(report);
+                }
+                Ok(_i) => {} //we wrote the complete report, presumably.
+                Err(_) => {}
+            };
+        }
     }
 }
 
@@ -78,5 +86,9 @@ impl USBKeyOut for USBOut {
     /// retrieve a KeyboardState
     fn ro_state(&self) -> &KeyboardState {
         return &self.state;
+    }
+    fn debug(&mut self, s: &str){
+        use crate::StringSender;
+        self.tx.writeln(s);
     }
 }

@@ -197,7 +197,6 @@ dependencies = [
  "either 1.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "embedded-hal 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "keytokey 0.1.0",
- "kinesis 0.1.0",
  "nb 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "no-std-compat 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "panic-halt 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -218,14 +217,6 @@ dependencies = [
  "num_enum 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "smallbitvec 2.4.0",
  "spin 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "kinesis"
-version = "0.1.0"
-dependencies = [
- "keytokey 0.1.0",
- "no-std-compat 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

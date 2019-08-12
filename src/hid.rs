@@ -238,7 +238,7 @@ impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, PartialEq, Copy)]
 pub struct KbHidReport([u8; 8]);
 
 impl KbHidReport {
