@@ -3,6 +3,7 @@
 #![feature(alloc_error_handler)]
 #![feature(clamp)]
 #![feature(const_fn)]
+#![feature(integer_atomics)]
 
 //extern crate panic_halt;
 
@@ -67,7 +68,6 @@ pub use stm32f1xx_hal::gpio::GpioExt as _stm32_hal_gpio_GpioExt;
 //pub use stm32f1xx_hal::hal::digital::StatefulOutputPin as _embedded_hal_digital_StatefulOutputPin;
 //pub use stm32f1xx_hal::hal::digital::ToggleableOutputPin as _embedded_hal_digital_ToggleableOutputPin;
 //pub use stm32f1xx_hal::hal::prelude::*;
-use core::convert::TryInto;
 use debouncing::{DebounceResult, Debouncer};
 pub use stm32f1xx_hal::dma::CircReadDma as _stm32_hal_dma_CircReadDma;
 pub use stm32f1xx_hal::dma::ReadDma as _stm32_hal_dma_ReadDma;
@@ -114,224 +114,231 @@ impl StringSender for serial::Tx<stm32f1::stm32f103::USART1> {
     }
 }
 
-pub fn get_translation() -> Vec<u32> {
+const TRANSLATION: &[u32] = {
     use keytokey::KeyCode::*;
-    vec![
+   &[
         0, //one of the missing nes?
         //00000001
-        V.into(),
+        V.to_u32(),
         //00000002
-        SColon.into(),
+        SColon.to_u32(),
         //00000003
-        F8.into(),
+        F8.to_u32(),
         //00000004
-        K.into(),
+        K.to_u32(),
         //00000005
-        Space.into(),
+        Space.to_u32(),
         //00000006
-        BSpace.into(),
+        BSpace.to_u32(),
         //00000007
-        Q.into(),
+        Q.to_u32(),
         //00000008
-        F2.into(),
+        F2.to_u32(),
         //9
         9,
         //0000000a
-        C.into(),
+        C.to_u32(),
         //0000000b
-        L.into(),
+        L.to_u32(),
         //c
         0xc,
         //0000000d
-        J.into(),
+        J.to_u32(),
         //0000000e
-        LGui.into(),
+        LGui.to_u32(),
         //0000000f
-        Delete.into(), // which one is this?
+        Delete.to_u32(), // which one is this?
         //00000010
-        A.into(),
+        A.to_u32(),
         //00000011
-        F1.into(),
+        F1.to_u32(),
         //12
         0x12,
         //13
-        D.into(),
+        D.to_u32(),
         //14
-        BSlash.into(), //labled LBracket.into(),
+        BSlash.to_u32(), //labled LBracket.into(),
         //15
-        Equal.into(),
+        Equal.to_u32(),
         //16
-        Down.into(),
+        Down.to_u32(),
         //17
-        Home.into(),
+        Home.to_u32(),
         //18
-        PgUp.into(),
+        PgUp.to_u32(),
         //19
-        0xF0100u32.into(), // te lowe left backslash key
+        0x1F596, // the lowe left backslash key
         //1A
-        Escape.into(),
+        Escape.to_u32(),
         //1B
         0x1b,
         //0000001c
-        E.into(),
+        E.to_u32(),
         //0000001d
-        Slash.into(), //label: slash
+        Slash.to_u32(), //label: slash
         //0000001e
-        LBracket.into(), //top right, label bslash
+        LBracket.to_u32(), //top right, label bslash
         //0000001f
-        Comma.into(),
+        Comma.to_u32(),
         //0x20
-        Enter.into(),
+        Enter.to_u32(),
         //00000021
-        LAlt.into(),
+        LAlt.to_u32(),
         //00000022
-        Z.into(),
+        Z.to_u32(),
         //00000023
-        Minus.into(),
+        Minus.to_u32(),
         //24
         0x24,
         //00000025
-        Right.into(),
+        Right.to_u32(),
         //00000026
-        Dot.into(),
+        Dot.to_u32(),
         //00000027
-        Quote.into(),
+        Quote.to_u32(),
         //00000028
-        M.into(),
+        M.to_u32(),
         //00000029
-        End.into(),
+        End.to_u32(),
         //0000002a
-        LCtrl.into(),
+        LCtrl.to_u32(),
         //0000002b
-        X.into(),
+        X.to_u32(),
         //2c
-        Tab.into(),
+        Tab.to_u32(),
         //2d
         0x2d,
         //0000002e
-        Left.into(),
+        Left.to_u32(),
         //0000002f
-        RBracket.into(),
+        RBracket.to_u32(),
         //00000030
-        RShift.into(),
+        RShift.to_u32(),
         //00000031
-        Up.into(),
+        Up.to_u32(),
         //00000032
-        RCtrl.into(),
+        RCtrl.to_u32(),
         //00000033
-        PgDown.into(),
+        PgDown.to_u32(),
         //00000034
-        Grave.into(),
+        Grave.to_u32(),
         //00000035
-        LShift.into(),
+        LShift.to_u32(),
         //36
-        Copy.into(),//palm1
+        Copy.to_u32(),//palm1
         //00000037
-        Kb3.into(),
+        Kb3.to_u32(),
         //00000038
-        Kb0.into(),
+        Kb0.to_u32(),
         //00000039
-        F12.into(),
+        F12.to_u32(),
         //0000003a
-        Kb8.into(),
+        Kb8.to_u32(),
         //0000003b
-        Kb6.into(),
+        Kb6.to_u32(),
         //0000003c
-        Kb5.into(),
+        Kb5.to_u32(),
         //0000003d
-        Kb1.into(),
+        Kb1.to_u32(),
         //0000003e
-        F6.into(),
+        F6.to_u32(),
         //3f
-        Paste.into(), ///palm 2
+        Paste.to_u32(), //palm 2
         //00000040
-        Kb4.into(),
+        Kb4.to_u32(),
         //00000041
-        Kb9.into(),
+        Kb9.to_u32(),
         //00000042
-        F11.into(),
+        F11.to_u32(),
         //00000043
-        Kb7.into(),
+        Kb7.to_u32(),
         //00000044
-        Y.into(),
+        Y.to_u32(),
         //00000045
-        T.into(),
+        T.to_u32(),
         //00000046
-        Kb2.into(),
+        Kb2.to_u32(),
         //00000047
-        F5.into(),
+        F5.to_u32(),
         //48,
         0, //palm3
         //00000049
-        R.into(),
+        R.to_u32(),
         //0000004a
-        P.into(),
+        P.to_u32(),
         //0000004b
-        F10.into(),
+        F10.to_u32(),
         //0000004c
-        I.into(),
+        I.to_u32(),
         //0000004d
-        H.into(),
+        H.to_u32(),
         //0000004e
-        G.into(),
+        G.to_u32(),
         //0000004f
-        W.into(),
+        W.to_u32(),
         //00000050
-        F3.into(),
+        F3.to_u32(),
         //51
         0x51,
         //00000052
-        F.into(),
+        F.to_u32(),
         //00000053
-        O.into(),
+        O.to_u32(),
         //00000054
-        F9.into(),
+        F9.to_u32(),
         //00000055
-        U.into(),
+        U.to_u32(),
         //00000056
-        N.into(),
+        N.to_u32(),
         //00000057
-        B.into(),
+        B.to_u32(),
         //00000058
-        S.into(),
+        S.to_u32(),
         //00000059
-        F4.into(),
+        F4.to_u32(),
     ]
-}
+};
 
 
 pub fn get_keytokey<'a, T: USBKeyOut>(mut  output: T) -> K2KKeyboard<'a, T> {
 use keytokey::{
     handlers, HandlerID, debug_handlers,
-    Event, EventStatus, KeyCode, Keyboard, ProcessKeys,
+    KeyCode, Keyboard, 
     Modifier,
-    USBKeyOut, 
     premade
 };
     output.debug(&format!("A{}", ALLOCATOR.get()));
     let mut k = Keyboard::new(output);
     k.output.debug(&format!("B{}", ALLOCATOR.get()));
-    use handlers::LayerAction::RewriteTo as RT;
+    //one shots must come before space cadets
+    k.add_handler(premade::one_shot_shift(400, 1000));
+    k.add_handler(premade::one_shot_ctrl(400, 1000));
+    k.add_handler(premade::one_shot_alt(400, 1000));
+    k.add_handler(premade::one_shot_gui(400, 1000));
+    k.output.debug(&format!("B1{}", ALLOCATOR.get()));
+
+
     use handlers::LayerAction::SendString;
     use handlers::LayerAction::RewriteToShifted as RTS;
     k.add_handler(premade::space_cadet_handler(KeyCode::F, KeyCode::U, 
         k.future_handler_id(2)));
+    const NUMPAD_MAP: &[(u32, u32)] = &[
+            (KeyCode::U.to_u32(), KeyCode::Kb7.to_u32()),
+            (KeyCode::I.to_u32(), KeyCode::Kb8.to_u32()),
+            (KeyCode::O.to_u32(), KeyCode::Kb9.to_u32()),
+            (KeyCode::J.to_u32(), KeyCode::Kb4.to_u32()),
+            (KeyCode::K.to_u32(), KeyCode::Kb5.to_u32()),
+            (KeyCode::L.to_u32(), KeyCode::Kb6.to_u32()),
+            (KeyCode::M.to_u32(), KeyCode::Kb1.to_u32()),
+            (KeyCode::Comma.to_u32(), KeyCode::Kb2.to_u32()),
+            (KeyCode::Dot.to_u32(), KeyCode::Kb3.to_u32()),
+            (KeyCode::Up.to_u32(), KeyCode::Kb0.to_u32()),
+            (KeyCode::Space.to_u32(), KeyCode::Tab.to_u32()),
+            (KeyCode::Down.to_u32(), KeyCode::Dot.to_u32()),
+            (KeyCode::BSlash.to_u32(), KeyCode::Comma.to_u32()),
+        ];
     let numpad_id = k.add_handler(Box::new(
-        handlers::Layer::new(vec![
-            (KeyCode::U, RT(KeyCode::Kb7.into())),
-            (KeyCode::I, RT(KeyCode::Kb8.into())),
-            (KeyCode::O, RT(KeyCode::Kb9.into())),
-            (KeyCode::J, RT(KeyCode::Kb4.into())),
-            (KeyCode::K, RT(KeyCode::Kb5.into())),
-            (KeyCode::L, RT(KeyCode::Kb6.into())),
-            (KeyCode::M, RT(KeyCode::Kb1.into())),
-            (KeyCode::Comma, RT(KeyCode::Kb2.into())),
-            (KeyCode::Dot, RT(KeyCode::Kb3.into())),
-            (KeyCode::Up, RT(KeyCode::Kb0.into())),
-            (KeyCode::Space, RT(KeyCode::Tab.into())),
-            (KeyCode::Down, RT(KeyCode::Dot.into())),
-            (KeyCode::BSlash, RT(KeyCode::Comma.into())),
-        ])
+        handlers::RewriteLayer::new(&NUMPAD_MAP)
     )
     );
     k.output.debug(&format!("C{}", ALLOCATOR.get()));
@@ -394,16 +401,32 @@ use keytokey::{
 
     k.output.state().enable_handler(dvorak_id);
 
-    k.add_handler(premade::one_shot_shift(400, 1000));
-    k.add_handler(premade::one_shot_ctrl(400, 1000));
-    k.add_handler(premade::one_shot_alt(400, 1000));
-    k.add_handler(premade::one_shot_gui(400, 1000));
     k.output.debug(&format!("F{}", ALLOCATOR.get()));
     k.add_handler(Box::new(premade::CopyPaste{}));
+    k.output.debug(&format!("G{}", ALLOCATOR.get()));
+
+    const SEQ1: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::F.to_u32()];
+    k.add_handler(Box::new(handlers::Sequence::new(SEQ1, "My Name", 3)));
+    const SEQ2: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::C.to_u32()];
+    k.add_handler(Box::new(handlers::Sequence::new(SEQ2, "email1", 3)));
+    const SEQ3: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::I.to_u32()];
+    k.add_handler(Box::new(handlers::Sequence::new(SEQ3, "email2", 3)));
+    const SEQ4: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::M.to_u32()];
+    k.add_handler(Box::new(handlers::Sequence::new(SEQ4, "Where I work", 3)));
+    const SEQ5: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::L.to_u32()];
+    k.add_handler(Box::new(handlers::Sequence::new(SEQ5, "email4...", 3)));
+
+
+
+
+
+
+    k.output.debug(&format!("I{}", ALLOCATOR.get()));
     k.add_handler(Box::new(handlers::UnicodeKeyboard::new()));
     k.add_handler(Box::new(handlers::USBKeyboard::new()));
     k.add_handler(Box::new(debug_handlers::TranslationHelper {}));
-    k.output.debug(&format!("G{}", ALLOCATOR.get()));
+    k.output.debug(&format!("J{}", ALLOCATOR.get()));
+ 
     return k;
 }
 
@@ -420,7 +443,6 @@ const APP: () = {
     static mut MATRIX: Matrix = ();
     static mut DEBOUNCER: Debouncer = ();
     static mut K2K: K2KKeyboard<'static, USBOut> = ();
-    static mut TRANSLATION: Vec<u32> = ();
     static mut LAST_TIME_MS: u32 = 0;
     static mut CURRENT_TIME_MS: u32 = 0;
     static mut HEAPSIZE: u32 = 0;
@@ -471,7 +493,7 @@ const APP: () = {
             .serial_number(env!("CARGO_PKG_VERSION"))
             .build();
 
-        let mut timer = timer::Timer::tim3(device.TIM3, 100.hz(), clocks, &mut rcc.apb1); //todo, do this faster ;)
+        let mut timer = timer::Timer::tim3(device.TIM3, 100.hz(), clocks, &mut rcc.apb1); //todo, do this faster ;
         timer.listen(timer::Event::Update);
 
         let mut timer_ms = timer::Timer::tim4(device.TIM4, 1000.hz(), clocks, &mut rcc.apb1);
@@ -582,16 +604,11 @@ const APP: () = {
             ],
         );
         let mut  output = USBOut::new(usb_class, tx);
-        output.tx.writeln(&format!("pre_matrix {}", ALLOCATOR.get()));
+        output.tx.writeln(&format!("pre_matrix {}", pre_matrix));
         output.tx.writeln(&format!("matrix {}", ALLOCATOR.get()));
 
         let debouncer = Debouncer::new(matrix.len());
         output.tx.writeln(&format!("debouncer {}", ALLOCATOR.get()));
-        let mut translation = get_translation();
-        for ii in translation.len()..matrix.len() {
-            translation.push(ii.try_into().unwrap());
-        }
-        output.tx.writeln(&format!("translation {}", ALLOCATOR.get()));
 
         let k2k = get_keytokey(output);
 
@@ -605,7 +622,6 @@ const APP: () = {
             MATRIX: matrix,
             DEBOUNCER: debouncer,
             K2K: k2k,
-            TRANSLATION: translation,
         }
     }
 
@@ -623,7 +639,7 @@ const APP: () = {
         if let Some(report) = resources.K2K.output.buffer.pop_front() {
             match resources.K2K.output.usb_class.write(report.as_bytes()) {
             Ok(0) => { //try again?
-                resources.K2K.output.buffer.push_back(report);
+                resources.K2K.output.buffer.push_front(report); // presumably doesn't happen?
             }
             Ok(_i) => {}, //complete report, presumably
             Err(_) => {},
@@ -644,7 +660,6 @@ const APP: () = {
         LAST_TIME_MS,
         LED,
         MATRIX,
-        TRANSLATION,
         TIMER,
         HEAPSIZE
     ])]
@@ -662,7 +677,6 @@ const APP: () = {
             .0
             .clamp(0, 2u32.pow(16) - 1);
         let debouncer = &mut *resources.DEBOUNCER;
-        let translation =& *resources.TRANSLATION;
         let mut update_last_time = false;
         let last_hs = *resources.HEAPSIZE;
         let hs = ALLOCATOR.get();
@@ -679,14 +693,14 @@ const APP: () = {
                     DebounceResult::NoChange => {}
                     DebounceResult::Pressed => {
                         nothing_changed = false;
-                        k2k.add_keypress(translation[ii], delta as u16);
+                        k2k.add_keypress(*TRANSLATION.get(ii).unwrap_or(&(ii as u32)), delta as u16);
                         update_last_time = true;
                         k2k.handle_keys().ok();
                         k2k.clear_unhandled();
                     }
                     DebounceResult::Released => {
                         nothing_changed = false;
-                        k2k.add_keyrelease(translation[ii], delta as u16);
+                        k2k.add_keyrelease(*TRANSLATION.get(ii).unwrap_or(&(ii as u32)), delta as u16);
                         update_last_time = true;
                         k2k.handle_keys().ok();
                         k2k.clear_unhandled();

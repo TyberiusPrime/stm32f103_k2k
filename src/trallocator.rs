@@ -1,4 +1,3 @@
-#![feature(integer_atomics, const_fn)]
 use core::alloc::{GlobalAlloc, Layout};
 use core::sync::atomic::{AtomicU32, Ordering};
 
@@ -20,9 +19,10 @@ impl<A: GlobalAlloc> Trallocator<A> {
         Trallocator(a, AtomicU32::new(0))
     }
 
-    pub fn reset(&self) {
+    /*pub fn reset(&self) {
         self.1.store(0, Ordering::SeqCst);
     }
+    */
     pub fn get(&self) -> u32 {
         self.1.load(Ordering::SeqCst)
     }
