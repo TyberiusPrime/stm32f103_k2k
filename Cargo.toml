@@ -21,9 +21,8 @@ alloc-cortex-m = "0.3.5"
 debouncing="0.1.0"
 
 [dependencies.smallbitvec]
+git = "https://github.com/servo/smallbitvec"
 version = "2.4.0"
-path = "../smallbitvec"
-default-features = false
 
 [dependencies.keytokey]
 path = "../keytokey"

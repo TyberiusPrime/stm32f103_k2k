@@ -311,7 +311,7 @@ use keytokey::{
     let mut k = Keyboard::new(output);
     k.output.debug(&format!("B{}", ALLOCATOR.get()));
     //one shots must come before space cadets
-    k.add_handler(premade::one_shot_shift(400, 1000));
+    //k.add_handler(premade::one_shot_shift(400, 1000));
     k.add_handler(premade::one_shot_ctrl(400, 1000));
     k.add_handler(premade::one_shot_alt(400, 1000));
     k.add_handler(premade::one_shot_gui(400, 1000));
@@ -320,8 +320,8 @@ use keytokey::{
 
     use handlers::LayerAction::SendString;
     use handlers::LayerAction::RewriteToShifted as RTS;
-    k.add_handler(premade::space_cadet_handler(KeyCode::F, KeyCode::U, 
-        k.future_handler_id(2)));
+    //k.add_handler(premade::space_cadet_handler(KeyCode::F, KeyCode::U, 
+        //k.future_handler_id(2)));
     const NUMPAD_MAP: &[(u32, u32)] = &[
             (KeyCode::U.to_u32(), KeyCode::Kb7.to_u32()),
             (KeyCode::I.to_u32(), KeyCode::Kb8.to_u32()),
@@ -341,10 +341,9 @@ use keytokey::{
         handlers::RewriteLayer::new(&NUMPAD_MAP)
     )
     );
-    k.output.debug(&format!("C{}", ALLOCATOR.get()));
 
-    k.add_handler(premade::space_cadet_handler(KeyCode::J, KeyCode::H, 
-        k.future_handler_id(2)));
+  //  k.add_handler(premade::space_cadet_handler(KeyCode::J, KeyCode::H, 
+   //     k.future_handler_id(2)));
     let umlaut_id = k.add_handler(Box::new(
         handlers::Layer::new(vec![
             (KeyCode::A, RTS(0xE4, 0xC4)),
@@ -354,6 +353,33 @@ use keytokey::{
         ])
     )
     );
+
+    k.add_handler(
+        Box::new(handlers::OneShot::new(
+            KeyCode::LShift,
+            KeyCode::No,
+            premade::ActionHandler::new(
+                Modifier::Shift as HandlerID,
+            ),
+            premade::ActionToggleHandler{id: numpad_id},
+            400,
+            1000,
+        )));
+    k.add_handler(
+        Box::new(handlers::OneShot::new(
+            KeyCode::RShift,
+            KeyCode::No,
+            premade::ActionHandler::new(
+                Modifier::Shift as HandlerID,
+            ),
+            premade::ActionToggleHandler{id: umlaut_id},
+            400,
+            1000,
+        )));
+
+
+
+    k.output.debug(&format!("C{}", ALLOCATOR.get()));
   //  k.output.state().enable_handler(umlaut_id);
     struct EscapeAndOff{ 
         pub ids: Vec<HandlerID>
@@ -386,13 +412,12 @@ use keytokey::{
         KeyCode::Escape, ea)));
 
     let dvorak_id = k.add_handler(premade::dvorak());
-/*
+
     k.add_handler(Box::new(handlers::LongTap::new(
        KeyCode::F1, 
        KeyCode::F1, 
        premade::ActionToggleHandler{id: dvorak_id},
        5000)));
-       */
 
 //$! -> 41, yeah.
 
@@ -406,15 +431,15 @@ use keytokey::{
     k.output.debug(&format!("G{}", ALLOCATOR.get()));
 
     const SEQ1: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::F.to_u32()];
-    k.add_handler(Box::new(handlers::Sequence::new(SEQ1, "My Name", 3)));
+    k.add_handler(Box::new(handlers::Sequence::new(SEQ1, "Florian Finkernagel", 3)));
     const SEQ2: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::C.to_u32()];
-    k.add_handler(Box::new(handlers::Sequence::new(SEQ2, "email1", 3)));
+    k.add_handler(Box::new(handlers::Sequence::new(SEQ2, "f.finkernagel@coonabibba.de", 3)));
     const SEQ3: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::I.to_u32()];
-    k.add_handler(Box::new(handlers::Sequence::new(SEQ3, "email2", 3)));
+    k.add_handler(Box::new(handlers::Sequence::new(SEQ3, "finkernagel@imt.uni-marburg.de", 3)));
     const SEQ4: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::M.to_u32()];
-    k.add_handler(Box::new(handlers::Sequence::new(SEQ4, "Where I work", 3)));
+    k.add_handler(Box::new(handlers::Sequence::new(SEQ4, "Institute for molecular and tumor biology, Philipps University, Marburg", 3)));
     const SEQ5: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::L.to_u32()];
-    k.add_handler(Box::new(handlers::Sequence::new(SEQ5, "email4...", 3)));
+    k.add_handler(Box::new(handlers::Sequence::new(SEQ4, "Institute for molecular and tumor biology, Philipps University, Marburg", 3)));
 
 
 
