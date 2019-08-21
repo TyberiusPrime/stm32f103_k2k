@@ -357,21 +357,11 @@ use keytokey::{
     k.add_handler(
         Box::new(handlers::OneShot::new(
             KeyCode::LShift,
-            KeyCode::No,
+            KeyCode::RShift,
             premade::ActionHandler::new(
                 Modifier::Shift as HandlerID,
             ),
             premade::ActionToggleHandler{id: numpad_id},
-            400,
-            1000,
-        )));
-    k.add_handler(
-        Box::new(handlers::OneShot::new(
-            KeyCode::RShift,
-            KeyCode::No,
-            premade::ActionHandler::new(
-                Modifier::Shift as HandlerID,
-            ),
             premade::ActionToggleHandler{id: umlaut_id},
             400,
             1000,
