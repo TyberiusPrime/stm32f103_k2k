@@ -128,9 +128,9 @@ const TRANSLATION: &[u32] = {
         //00000004
         K.to_u32(),
         //00000005
-        Space.to_u32(),
-        //00000006
         BSpace.to_u32(),
+        //00000006
+        Delete.to_u32(),
         //00000007
         Q.to_u32(),
         //00000008
@@ -148,7 +148,7 @@ const TRANSLATION: &[u32] = {
         //0000000e
         LGui.to_u32(),
         //0000000f
-        Delete.to_u32(), // which one is this?
+        Space.to_u32(), // which one is this?
         //00000010
         A.to_u32(),
         //00000011
@@ -323,32 +323,12 @@ use keytokey::{
     use handlers::LayerAction::RewriteToShifted as RTS;
     //k.add_handler(premade::space_cadet_handler(KeyCode::F, KeyCode::U, 
         //k.future_handler_id(2)));
-    const NUMPAD_MAP: &[(u32, u32)] = &[
-            (KeyCode::U.to_u32(), KeyCode::Kb7.to_u32()),
-            (KeyCode::I.to_u32(), KeyCode::Kb8.to_u32()),
-            (KeyCode::O.to_u32(), KeyCode::Kb9.to_u32()),
-            (KeyCode::J.to_u32(), KeyCode::Kb4.to_u32()),
-            (KeyCode::K.to_u32(), KeyCode::Kb5.to_u32()),
-            (KeyCode::L.to_u32(), KeyCode::Kb6.to_u32()),
-            (KeyCode::M.to_u32(), KeyCode::Kb1.to_u32()),
-            (KeyCode::Comma.to_u32(), KeyCode::Kb2.to_u32()),
-            (KeyCode::Dot.to_u32(), KeyCode::Kb3.to_u32()),
-            (KeyCode::Up.to_u32(), KeyCode::Kb0.to_u32()),
-            (KeyCode::Space.to_u32(), KeyCode::Tab.to_u32()),
-            (KeyCode::Down.to_u32(), KeyCode::Dot.to_u32()),
-            (KeyCode::BSlash.to_u32(), KeyCode::Comma.to_u32()),
-        ];
-    let numpad_id = k.add_handler(Box::new(
-        handlers::RewriteLayer::new(&NUMPAD_MAP)
-    )
-    );
-
   //  k.add_handler(premade::space_cadet_handler(KeyCode::J, KeyCode::H, 
    //     k.future_handler_id(2)));
     let umlaut_id = k.future_handler_id(2);
 
-    struct UmlautTapDance {handler_id: HandlerID}
-    impl handlers::TapDanceAction for UmlautTapDance {
+    struct LayerToggleTapDance {handler_id: HandlerID, toggle: bool}
+    impl handlers::TapDanceAction for LayerToggleTapDance {
         fn on_tapdance( &mut self, trigger: u32, 
             output: &mut impl USBKeyOut, 
                 tap_count: u8, 
@@ -356,17 +336,25 @@ use keytokey::{
                     match tap_count {
                         0 => {},
                         1 => output.send_keys(&[KeyCode::try_from(trigger).unwrap()]),
-                        _ => output.state().enable_handler(self.handler_id),
+                        _ => {
+                            if self.toggle  {
+                                output.state().toggle_handler(self.handler_id);
+                            }   
+                            else {
+                                output.state().enable_handler(self.handler_id);
+                            }
+                        },
                     }
          }
     }
 
     k.add_handler(
         Box::new(handlers::TapDance::new(
-            KeyCode::F6,
-            UmlautTapDance{handler_id: umlaut_id},
+            KeyCode::F8,
+            LayerToggleTapDance{handler_id: umlaut_id, toggle: false},
             100
         )));
+
 
 
     //the umlaut layer - mut come after the tap dance!
@@ -381,6 +369,38 @@ use keytokey::{
         )
     )
     );
+
+
+    const NUMPAD_MAP: &[(u32, u32)] = &[
+            (KeyCode::U.to_u32(), KeyCode::Kb7.to_u32()),
+            (KeyCode::I.to_u32(), KeyCode::Kb8.to_u32()),
+            (KeyCode::O.to_u32(), KeyCode::Kb9.to_u32()),
+            (KeyCode::J.to_u32(), KeyCode::Kb4.to_u32()),
+            (KeyCode::K.to_u32(), KeyCode::Kb5.to_u32()),
+            (KeyCode::L.to_u32(), KeyCode::Kb6.to_u32()),
+            (KeyCode::M.to_u32(), KeyCode::Kb1.to_u32()),
+            (KeyCode::Comma.to_u32(), KeyCode::Kb2.to_u32()),
+            (KeyCode::Dot.to_u32(), KeyCode::Kb3.to_u32()),
+            (KeyCode::N.to_u32(), KeyCode::Kb0.to_u32()),
+            (KeyCode::Space.to_u32(), KeyCode::Tab.to_u32()),
+            (KeyCode::BSlash.to_u32(), KeyCode::Dot.to_u32()),
+            (KeyCode::H.to_u32(), KeyCode::Comma.to_u32()),
+        ];
+    let numpad_id = k.future_handler_id(2);
+    k.add_handler(
+        Box::new(handlers::TapDance::new(
+            KeyCode::F6,
+            LayerToggleTapDance{handler_id: numpad_id, toggle: true},
+            100
+        )));
+    k.add_handler(Box::new(
+        handlers::RewriteLayer::new(&NUMPAD_MAP)
+    )
+    );
+
+
+
+
     let dvorak_id = k.add_handler(premade::dvorak());
 
     //k.output.debug(&format!("C{}", ALLOCATOR.get()));
