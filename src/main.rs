@@ -55,6 +55,7 @@ use crate::keyboard::Keyboard;
 use crate::matrix::Matrix;
 use no_std_compat::prelude::v1::*;
 use rtfm::app;
+use core::convert::TryFrom;
 
 //use stm32f1xx_hal::prelude::*; can't use this with v2 digital traits
 use stm32_usbd::{UsbBus, UsbBusType};
@@ -307,15 +308,15 @@ use keytokey::{
     Modifier,
     premade
 };
-    output.debug(&format!("A{}", ALLOCATOR.get()));
+    //output.debug(&format!("A{}", ALLOCATOR.get()));
     let mut k = Keyboard::new(output);
-    k.output.debug(&format!("B{}", ALLOCATOR.get()));
+    //k.output.debug(&format!("B{}", ALLOCATOR.get()));
     //one shots must come before space cadets
     //k.add_handler(premade::one_shot_shift(400, 1000));
     k.add_handler(premade::one_shot_ctrl(400, 1000));
     k.add_handler(premade::one_shot_alt(400, 1000));
     k.add_handler(premade::one_shot_gui(400, 1000));
-    k.output.debug(&format!("B1{}", ALLOCATOR.get()));
+    //k.output.debug(&format!("B1{}", ALLOCATOR.get()));
 
 
     use handlers::LayerAction::SendString;
@@ -344,15 +345,51 @@ use keytokey::{
 
   //  k.add_handler(premade::space_cadet_handler(KeyCode::J, KeyCode::H, 
    //     k.future_handler_id(2)));
-    let umlaut_id = k.add_handler(Box::new(
+    let umlaut_id = k.future_handler_id(2);
+
+    struct UmlautTapDance {handler_id: HandlerID}
+    impl handlers::TapDanceAction for UmlautTapDance {
+        fn on_tapdance( &mut self, trigger: u32, 
+            output: &mut impl USBKeyOut, 
+                tap_count: u8, 
+                tap_end: handlers::TapDanceEnd){
+                    match tap_count {
+                        0 => {},
+                        1 => output.send_keys(&[KeyCode::try_from(trigger).unwrap()]),
+                        _ => output.state().enable_handler(self.handler_id),
+                    }
+         }
+    }
+
+    k.add_handler(
+        Box::new(handlers::TapDance::new(
+            KeyCode::F6,
+            UmlautTapDance{handler_id: umlaut_id},
+            100
+        )));
+
+
+    //the umlaut layer - mut come after the tap dance!
+    k.add_handler(Box::new(
         handlers::Layer::new(vec![
             (KeyCode::A, RTS(0xE4, 0xC4)),
             (KeyCode::S, RTS(0xF6, 0xD6)),
-            (KeyCode::R, RTS(0xFC, 0xDC)),
+            (KeyCode::F, RTS(0xFC, 0xDC)),
             (KeyCode::SColon, SendString("ß")),
-        ])
+        ],
+        handlers::AutoOff::AfterNonModifier
+        )
     )
     );
+    let dvorak_id = k.add_handler(premade::dvorak());
+
+    //k.output.debug(&format!("C{}", ALLOCATOR.get()));
+  //  k.output.state().enable_handler(umlaut_id);
+    let mut abort = premade::ActionAbort::new();
+    abort.set_abort_status(dvorak_id, true);
+    abort.set_abort_status(numpad_id, false);
+    abort.set_abort_status(umlaut_id , false);
+        //k.output.debug(&format!("D{}", ALLOCATOR.get()));
 
     k.add_handler(
         Box::new(handlers::OneShot::new(
@@ -361,64 +398,21 @@ use keytokey::{
             premade::ActionHandler::new(
                 Modifier::Shift as HandlerID,
             ),
-            premade::ActionToggleHandler{id: numpad_id},
+            abort,
             premade::ActionToggleHandler{id: umlaut_id},
             400,
             1000,
         )));
-
-
-
-    k.output.debug(&format!("C{}", ALLOCATOR.get()));
-  //  k.output.state().enable_handler(umlaut_id);
-    struct EscapeAndOff{ 
-        pub ids: Vec<HandlerID>
-  };
-    impl EscapeAndOff {
-        fn new() -> EscapeAndOff {
-            EscapeAndOff{ids: Vec::new()}
-        }}
-
-    impl handlers::OnOff for EscapeAndOff {
-    fn on_activate(&mut self, output: &mut impl USBKeyOut) {
-        for id in self.ids.iter(){
-            output.state().disable_handler(*id);
-        }
-        output.state().set_modifier(Modifier::Shift, false);
-        output.state().set_modifier(Modifier::Ctrl, false);
-        output.state().set_modifier(Modifier::Alt, false);
-        output.state().set_modifier(Modifier::Gui, false);
-        output.send_keys(&[KeyCode::Escape]);
-    }
-    fn on_deactivate(&mut self, _output: &mut impl USBKeyOut) {}
-}
-
-    let mut ea = EscapeAndOff::new();
-    ea.ids.push(numpad_id);
-    ea.ids.push(umlaut_id);
-    k.output.debug(&format!("D{}", ALLOCATOR.get()));
-
-    k.add_handler(Box::new(handlers::PressReleaseMacro::new(
-        KeyCode::Escape, ea)));
-
-    let dvorak_id = k.add_handler(premade::dvorak());
-
-    k.add_handler(Box::new(handlers::LongTap::new(
-       KeyCode::F1, 
-       KeyCode::F1, 
-       premade::ActionToggleHandler{id: dvorak_id},
-       5000)));
-
 //$! -> 41, yeah.
 
-    k.output.debug(&format!("E{}", ALLOCATOR.get()));
+    //k.output.debug(&format!("E{}", ALLOCATOR.get()));
 
 
     k.output.state().enable_handler(dvorak_id);
 
-    k.output.debug(&format!("F{}", ALLOCATOR.get()));
+    //k.output.debug(&format!("F{}", ALLOCATOR.get()));
     k.add_handler(Box::new(premade::CopyPaste{}));
-    k.output.debug(&format!("G{}", ALLOCATOR.get()));
+    //k.output.debug(&format!("G{}", ALLOCATOR.get()));
 
     const SEQ1: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::F.to_u32()];
     k.add_handler(Box::new(handlers::Sequence::new(SEQ1, "Florian Finkernagel", 3)));
@@ -436,11 +430,11 @@ use keytokey::{
 
 
 
-    k.output.debug(&format!("I{}", ALLOCATOR.get()));
+    //k.output.debug(&format!("I{}", ALLOCATOR.get()));
     k.add_handler(Box::new(handlers::UnicodeKeyboard::new()));
     k.add_handler(Box::new(handlers::USBKeyboard::new()));
-    k.add_handler(Box::new(debug_handlers::TranslationHelper {}));
-    k.output.debug(&format!("J{}", ALLOCATOR.get()));
+    //k.add_handler(Box::new(debug_handlers::TranslationHelper {}));
+    //k.output.debug(&format!("J{}", ALLOCATOR.get()));
  
     return k;
 }
@@ -619,11 +613,11 @@ const APP: () = {
             ],
         );
         let mut  output = USBOut::new(usb_class, tx);
-        output.tx.writeln(&format!("pre_matrix {}", pre_matrix));
-        output.tx.writeln(&format!("matrix {}", ALLOCATOR.get()));
+        //output.tx.writeln(&format!("pre_matrix {}", pre_matrix));
+        //output.tx.writeln(&format!("matrix {}", ALLOCATOR.get()));
 
         let debouncer = Debouncer::new(matrix.len());
-        output.tx.writeln(&format!("debouncer {}", ALLOCATOR.get()));
+        //output.tx.writeln(&format!("debouncer {}", ALLOCATOR.get()));
 
         let k2k = get_keytokey(output);
 
@@ -696,10 +690,9 @@ const APP: () = {
         let last_hs = *resources.HEAPSIZE;
         let hs = ALLOCATOR.get();
         resources.K2K.lock(|k2k| {
-            matrix::Matrix::debug_serial(&states, &mut k2k.output.tx);
-
+            //matrix::Matrix::debug_serial(&states, &mut k2k.output.tx); 
             if hs != last_hs {
-                k2k.output.tx.writeln(&format!("heap {}", hs));
+                //k2k.output.tx.writeln(&format!("heap {}", hs));
             }
 
 
