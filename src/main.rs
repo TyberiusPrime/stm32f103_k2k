@@ -424,7 +424,13 @@ use keytokey::{
             1000,
         )));
 //$! -> 41, yeah.
-
+    k.add_handler(
+        Box::new(handlers::TapDance::new(
+            KeyCode::F1,
+            LayerToggleTapDance{handler_id: dvorak_id, toggle: true},
+            100
+        )));
+    
     //k.output.debug(&format!("E{}", ALLOCATOR.get()));
 
 
