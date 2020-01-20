@@ -313,9 +313,9 @@ use keytokey::{
     //k.output.debug(&format!("B{}", ALLOCATOR.get()));
     //one shots must come before space cadets
     //k.add_handler(premade::one_shot_shift(400, 1000));
-    k.add_handler(premade::one_shot_ctrl(400, 1000));
-    k.add_handler(premade::one_shot_alt(400, 1000));
-    k.add_handler(premade::one_shot_gui(400, 1000));
+    //k.add_handler(premade::one_shot_ctrl(400, 1000));
+    //k.add_handler(premade::one_shot_alt(400, 1000));
+    //k.add_handler(premade::one_shot_gui(400, 1000));
     //k.output.debug(&format!("B1{}", ALLOCATOR.get()));
 
 
@@ -437,7 +437,16 @@ use keytokey::{
     k.output.state().enable_handler(dvorak_id);
 
     //k.output.debug(&format!("F{}", ALLOCATOR.get()));
-    k.add_handler(Box::new(premade::CopyPaste{}));
+    //k.add_handler(Box::new(premade::CopyPaste{}));
+    k.add_handler(Box::new(
+           handlers::PressMacro::new(KeyCode::Copy,
+                                        vec!(KeyCode::LGui, KeyCode::LCtrl, KeyCode::LShift, KeyCode::C))));
+            
+    k.add_handler(Box::new(
+           handlers::PressMacro::new(KeyCode::Paste,
+                                        vec!(KeyCode::LCtrl, KeyCode::V))));
+            
+
     //k.output.debug(&format!("G{}", ALLOCATOR.get()));
 
     const SEQ1: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::F.to_u32()];

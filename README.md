@@ -4,3 +4,6 @@ A rust keyboard firmware for stm32f103 based microcontroller boards like the Blu
 
 This firmware uses Key2Key for the intepretation of the key presses,
 which should be about feature equivalent with [QMK](https://github.com/qmk/qmk_firmware).
+
+
+(you need to rustup target add thumbv7m-none-eabi to be able to compile)
