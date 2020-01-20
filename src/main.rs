@@ -449,21 +449,6 @@ use keytokey::{
 
     //k.output.debug(&format!("G{}", ALLOCATOR.get()));
 
-    const SEQ1: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::F.to_u32()];
-    k.add_handler(Box::new(handlers::Sequence::new(SEQ1, "Florian Finkernagel", 3)));
-    const SEQ2: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::C.to_u32()];
-    k.add_handler(Box::new(handlers::Sequence::new(SEQ2, "f.finkernagel@coonabibba.de", 3)));
-    const SEQ3: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::I.to_u32()];
-    k.add_handler(Box::new(handlers::Sequence::new(SEQ3, "finkernagel@imt.uni-marburg.de", 3)));
-    const SEQ4: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::M.to_u32()];
-    k.add_handler(Box::new(handlers::Sequence::new(SEQ4, "Institute for molecular and tumor biology, Philipps University, Marburg", 3)));
-    const SEQ5: &[u32] = &[0x1F596, KeyCode::F.to_u32(), KeyCode::L.to_u32()];
-    k.add_handler(Box::new(handlers::Sequence::new(SEQ4, "Institute for molecular and tumor biology, Philipps University, Marburg", 3)));
-
-
-
-
-
 
     //k.output.debug(&format!("I{}", ALLOCATOR.get()));
     k.add_handler(Box::new(handlers::UnicodeKeyboard::new()));
