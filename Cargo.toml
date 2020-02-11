@@ -25,19 +25,16 @@ git = "https://github.com/servo/smallbitvec"
 version = "2.4.0"
 
 [dependencies.keytokey]
-path = "../keytokey"
+git = "https://github.com/TyberiusPrime/KeyToKey.git"
 
 [dependencies.stm32f1]
 version = "0.7.0"
 features = ["stm32f103", "rt"]
 
 [profile.dev]
-opt-level = 1
 lto = true
-incremental = false
+opt-level = "z"
 
 [profile.release]
 lto = true
-incremental = false
 opt-level = "z"
-debug = true
